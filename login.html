@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Superchat — Iniciar sesión</title>
+    <meta name="description" content="Inicia sesión en Superchat">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <link rel="stylesheet" href="public/css/style.css">
+</head>
+<body>
+
+    <!-- ── FONDO INTERACTIVO ────────────────────────── -->
+    <div id="login-bg">
+        <div id="login-bg-parallax">
+            <span class="orb-wrap" data-intensity="1.0"><div class="login-bg-orb login-bg-orb-1"></div></span>
+            <span class="orb-wrap" data-intensity="0.7"><div class="login-bg-orb login-bg-orb-2"></div></span>
+            <span class="orb-wrap" data-intensity="1.3"><div class="login-bg-orb login-bg-orb-3"></div></span>
+            <span class="orb-wrap" data-intensity="0.5"><div class="login-bg-orb login-bg-orb-4"></div></span>
+            <span class="orb-wrap" data-intensity="0.9"><div class="login-bg-orb login-bg-orb-5"></div></span>
+            <span class="orb-wrap" data-intensity="1.1"><div class="login-bg-orb login-bg-orb-6"></div></span>
+        </div>
+    </div>
+
+    <!-- ── HEADER ───────────────────────────────────── -->
+    <header>
+        <div class="header-left">
+            <span class="header-dot"></span>
+            <span class="header-title">Superchat</span>
+        </div>
+        <div class="header-right">
+            <button id="theme-btn" class="icon-btn" title="Cambiar tema" aria-label="Cambiar tema">
+                <svg id="icon-moon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+                </svg>
+                <svg id="icon-sun" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:none">
+                    <circle cx="12" cy="12" r="5" />
+                    <line x1="12" y1="1" x2="12" y2="3" />
+                    <line x1="12" y1="21" x2="12" y2="23" />
+                    <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+                    <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+                    <line x1="1" y1="12" x2="3" y2="12" />
+                    <line x1="21" y1="12" x2="23" y2="12" />
+                    <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+                    <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+                </svg>
+            </button>
+        </div>
+    </header>
+
+    <!-- ── LOGIN CONTAINER ──────────────────────────── -->
+    <div id="login-container">
+        <div id="login-card">
+            <!-- Tabs -->
+            <div id="login-tabs">
+                <button id="tab-login" class="login-tab active">Iniciar sesión</button>
+                <button id="tab-register" class="login-tab">Crear cuenta</button>
+            </div>
+
+            <!-- Login Form -->
+            <form id="login-form" class="login-form" novalidate>
+                <div class="login-field">
+                    <label for="login-email">Correo electrónico</label>
+                    <input type="email" id="login-email" placeholder="tu@correo.com" autocomplete="email" required>
+                </div>
+                <div class="login-field">
+                    <label for="login-password">Contraseña</label>
+                    <input type="password" id="login-password" placeholder="••••••••" autocomplete="current-password" required>
+                </div>
+                <button type="submit" id="login-submit" class="login-btn">Entrar</button>
+                <p id="login-error" class="login-error"></p>
+            </form>
+
+            <!-- Register Form -->
+            <form id="register-form" class="login-form" style="display:none" novalidate>
+                <div class="login-field">
+                    <label for="reg-name">Nombre de usuario</label>
+                    <input type="text" id="reg-name" placeholder="Tu nombre en el chat" autocomplete="off" required>
+                </div>
+                <div class="login-field">
+                    <label for="reg-email">Correo electrónico</label>
+                    <input type="email" id="reg-email" placeholder="tu@correo.com" autocomplete="email" required>
+                </div>
+                <div class="login-field">
+                    <label for="reg-password">Contraseña</label>
+                    <input type="password" id="reg-password" placeholder="Mínimo 6 caracteres" autocomplete="new-password" required>
+                </div>
+                <button type="submit" id="register-submit" class="login-btn">Crear cuenta</button>
+                <p id="register-error" class="login-error"></p>
+            </form>
+
+            <!-- Loading overlay -->
+            <div id="login-loading" style="display:none">
+                <div class="login-spinner"></div>
+                <span>Conectando…</span>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="public/js/login.js?v=1"></script>
+
+</body>
+</html>

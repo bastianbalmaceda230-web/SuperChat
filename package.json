@@ -1,0 +1,19 @@
+{
+  "name": "superchat",
+  "version": "1.0.0",
+  "description": "Chat en tiempo real con Socket.IO + Firebase. Salas, imágenes, audios y modo oscuro.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": ["chat", "socket.io", "firebase", "realtime", "superchat"],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "express": "^5.2.1",
+    "socket.io": "^4.8.3"
+  }
+}
