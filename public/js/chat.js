@@ -359,12 +359,48 @@ function playSound(tipo = 'mensaje') {
             osc.frequency.exponentialRampToValueAtTime(660, ctx.currentTime + 0.12);
             gain.gain.setValueAtTime(0.12, ctx.currentTime);
             gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.25);
+            osc.start(ctx.currentTime); osc.stop(ctx.currentTime + 0.25);
+        } else if (tipo === 'login') {
+            // Tono ascendente: 440 → 660 → 880 (crescendo agradable)
+            const osc2 = ctx.createOscillator();
+            const osc3 = ctx.createOscillator();
+            osc2.connect(gain); osc3.connect(gain);
+            osc2.type = 'sine'; osc3.type = 'sine';
+            osc.frequency.setValueAtTime(440, ctx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.18);
+            osc2.frequency.setValueAtTime(554, ctx.currentTime + 0.06);
+            osc2.frequency.exponentialRampToValueAtTime(1108, ctx.currentTime + 0.24);
+            osc3.frequency.setValueAtTime(659, ctx.currentTime + 0.12);
+            osc3.frequency.exponentialRampToValueAtTime(1318, ctx.currentTime + 0.28);
+            gain.gain.setValueAtTime(0.08, ctx.currentTime);
+            gain.gain.setValueAtTime(0.1, ctx.currentTime + 0.06);
+            gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.45);
+            osc.start(ctx.currentTime); osc.stop(ctx.currentTime + 0.45);
+            osc2.start(ctx.currentTime + 0.06); osc2.stop(ctx.currentTime + 0.45);
+            osc3.start(ctx.currentTime + 0.12); osc3.stop(ctx.currentTime + 0.45);
+        } else if (tipo === 'logout') {
+            // Tono descendente: 880 → 660 → 440 (decrescendo suave)
+            const osc2 = ctx.createOscillator();
+            const osc3 = ctx.createOscillator();
+            osc2.connect(gain); osc3.connect(gain);
+            osc2.type = 'sine'; osc3.type = 'sine';
+            osc.frequency.setValueAtTime(880, ctx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(440, ctx.currentTime + 0.35);
+            osc2.frequency.setValueAtTime(698, ctx.currentTime + 0.04);
+            osc2.frequency.exponentialRampToValueAtTime(349, ctx.currentTime + 0.38);
+            osc3.frequency.setValueAtTime(587, ctx.currentTime + 0.1);
+            osc3.frequency.exponentialRampToValueAtTime(293, ctx.currentTime + 0.4);
+            gain.gain.setValueAtTime(0.1, ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.55);
+            osc.start(ctx.currentTime); osc.stop(ctx.currentTime + 0.55);
+            osc2.start(ctx.currentTime + 0.04); osc2.stop(ctx.currentTime + 0.55);
+            osc3.start(ctx.currentTime + 0.1); osc3.stop(ctx.currentTime + 0.55);
         } else {
             osc.frequency.setValueAtTime(520, ctx.currentTime);
             gain.gain.setValueAtTime(0.07, ctx.currentTime);
             gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35);
+            osc.start(ctx.currentTime); osc.stop(ctx.currentTime + 0.35);
         }
-        osc.start(ctx.currentTime); osc.stop(ctx.currentTime + 0.4);
     } catch (e) { }
 }
 
@@ -424,6 +460,7 @@ function showWelcomeAnimation(nombre) {
     nameEl.textContent = nombre;
 
     overlay.style.display = 'flex';
+    playSound('login');
 
     setTimeout(() => {
         overlay.classList.add('welcome-out');
@@ -472,6 +509,7 @@ function showLogoutAnimation(nombre) {
     nameEl.textContent = nombre;
 
     overlay.classList.add('logout-active');
+    playSound('logout');
 
     return new Promise(resolve => {
         setTimeout(() => {
