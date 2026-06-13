@@ -450,12 +450,10 @@ const waitForName = setInterval(() => {
           if (window._fbSuscribirPresencia) {
             window._fbSuscribirPresencia('general', renderMembers);
           }
-          if (window._fbEnviarMensajeSistema) {
-            // Pequeño delay para asegurar que presencia se registró
-            setTimeout(() => {
-              window._fbEnviarMensajeSistema('general', `${miNombre} se unió al chat`);
-            }, 800);
-          }
+          // Notificación toast en lugar de mensaje en el chat
+          setTimeout(() => {
+            showToast('Sala', `${miNombre} se unió al chat`, 'sistema');
+          }, 800);
         }
         console.log('[Chat] Nombre cargado desde Firebase:', miNombre);
     }
@@ -607,11 +605,7 @@ if (socket) {
   });
 
   socket.on('mensaje-sistema', (msg) => {
-      const div = document.createElement('div');
-      div.classList.add('mensaje', 'sistema');
-      div.textContent = msg;
-      chatContainer.appendChild(div);
-      chatContainer.scrollTop = chatContainer.scrollHeight;
+      // Solo notificación toast, no ensucia el chat
       playSound('sistema');
       showToast('Sala', msg, 'sistema');
   });
@@ -767,9 +761,8 @@ function crearBotonSala(salaId, nombre, esCreador = false) {
             if (window._fbSuscribirPresencia) {
                 window._fbSuscribirPresencia(currentSala, renderMembers);
             }
-            if (window._fbEnviarMensajeSistema && miNombre) {
-                window._fbEnviarMensajeSistema(salaAnterior, `${miNombre} salió de #${salaAnterior}`);
-                window._fbEnviarMensajeSistema(currentSala, `${miNombre} entró a #${currentSala}`);
+            if (miNombre) {
+                showToast('Sala', `${miNombre} entró a #${currentSala}`, 'sistema');
             }
         }
         chatContainer.innerHTML = '';
@@ -824,9 +817,8 @@ document.querySelectorAll('.sala-btn').forEach(btn => {
             if (window._fbSuscribirPresencia) {
                 window._fbSuscribirPresencia(currentSala, renderMembers);
             }
-            if (window._fbEnviarMensajeSistema && miNombre && salaAnterior !== currentSala) {
-                window._fbEnviarMensajeSistema(salaAnterior, `${miNombre} salió de #${salaAnterior}`);
-                window._fbEnviarMensajeSistema(currentSala, `${miNombre} entró a #${currentSala}`);
+            if (miNombre && salaAnterior !== currentSala) {
+                showToast('Sala', `${miNombre} entró a #${currentSala}`, 'sistema');
             }
         }
         chatContainer.innerHTML = '';

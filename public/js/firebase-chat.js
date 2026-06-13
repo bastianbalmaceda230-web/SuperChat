@@ -198,14 +198,8 @@ function renderFirestoreMsg(d, docId, esNuevo = false) {
   if (window._mensajesRenderizados && window._mensajesRenderizados.has(clave)) return;
   if (window._mensajesRenderizados) window._mensajesRenderizados.add(clave);
 
-  // Mensaje del sistema: se renderiza centrado, sin burbuja ni autor
+  // Mensaje del sistema: solo notificación toast, no se muestra en el chat
   if (d.tipo === 'sistema') {
-    const div = document.createElement('div');
-    div.classList.add('mensaje', 'sistema');
-    div.textContent = d.mensaje;
-    chatContainer.appendChild(div);
-    chatContainer.scrollTop = chatContainer.scrollHeight;
-    // Solo sonar si es mensaje nuevo (tiempo real), no del historial
     if (esNuevo && window._superchatPlaySound) {
       window._superchatPlaySound('sistema');
     }
