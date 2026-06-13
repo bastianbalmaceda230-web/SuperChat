@@ -125,7 +125,10 @@ body {
   color: var(--text);
   display: flex;
   flex-direction: column;
+  /* Use 100dvh with -webkit-fill-available fallback for iOS Safari */
+  height: 100vh;
   height: 100dvh;
+  min-height: -webkit-fill-available;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   transition: background 0.25s, color 0.25s;
@@ -613,6 +616,8 @@ header {
   display: flex;
   gap: 6px;
   padding: 10px 14px;
+  /* Add safe-area padding for iPhone notch/home bar */
+  padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
   background: var(--glass);
   backdrop-filter: saturate(180%) blur(20px);
   -webkit-backdrop-filter: saturate(180%) blur(20px);
@@ -620,6 +625,10 @@ header {
   flex-shrink: 0;
   align-items: center;
   transition: background 0.25s;
+  /* Prevent form from being hidden under virtual keyboard */
+  position: sticky;
+  bottom: 0;
+  z-index: 10;
 }
 
 #message-input {
@@ -1171,6 +1180,18 @@ header {
   .dm-panel-wide {
     width: 100% !important;
   }
+
+  /* On mobile, allow body to shrink when keyboard appears */
+  html, body {
+    height: 100%;
+    min-height: -webkit-fill-available;
+  }
+
+  #chat-panel {
+    /* Use flex with overflow hidden so the form stays at bottom */
+    height: 100%;
+    min-height: 0;
+  }
 }
 
 /* ─── ≤480px (phones) ────────────────────────── */
@@ -1306,7 +1327,8 @@ header {
   #message-input {
     min-width: 0;
     padding: 9px 12px;
-    font-size: 0.82rem;
+    font-size: 0.85rem;  /* 16px minimum to prevent iOS zoom on focus */
+    font-size: max(0.85rem, 16px);
   }
 
   #send-btn {
@@ -1499,6 +1521,16 @@ header {
     --header-h: 48px;
     --nav-h: 38px;
     --form-h: 56px;
+  }
+
+  /* Ensure form-container stays visible above virtual keyboard on Android */
+  #form-container {
+    padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+  }
+
+  /* DM form same treatment */
+  #dm-form-container {
+    padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
   }
 
   /* ─ Mensaje sistema ───────────────────────── */

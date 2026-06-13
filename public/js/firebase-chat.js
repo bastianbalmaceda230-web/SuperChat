@@ -130,6 +130,9 @@ export function suscribirSala(sala) {
 
   limpiarHistorial();
 
+  // Resetear deduplicador al cambiar de sala (evita bloqueos cruzados entre salas)
+  if (window._mensajesRenderizados) window._mensajesRenderizados = new Set();
+
   // Ejecutar limpieza de mensajes viejos cada vez que se entra a una sala
   limpiarMensajesViejos(sala);
 

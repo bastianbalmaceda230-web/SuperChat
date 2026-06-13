@@ -523,7 +523,10 @@ form.addEventListener('submit', (e) => {
 // ─── RECIBIR MENSAJES (Socket.IO) ─────────────────────────────────────────────
 if (socket) {
   socket.on('mensaje-chat', (data) => {
-      const clave = data.usuario + '|' + data.mensaje.slice(0, 40) + '|' + (data.ts || '');
+      // Clave única: usamos el ts del servidor como string (igual que Firestore usa seconds)
+      // Firestore key será 'doc|<docId>', pero también registramos esta clave por si acaso
+      const tsKey = data.ts ? Math.floor(data.ts / 1000) : '';
+      const clave = data.usuario + '|' + data.mensaje.slice(0, 40) + '|' + tsKey;
       if (mensajeYaRenderizado(clave)) return;
       const div = crearBurbuja(data.usuario, data.hora);
       const p = document.createElement('span');
@@ -711,6 +714,7 @@ function crearBotonSala(salaId, nombre, esCreador = false) {
             socket.emit('unirse-sala', currentSala);
         }
         chatContainer.innerHTML = '';
+        limpiarDeduplicador();  // Limpiar dedup al cambiar sala
         if (window._fbSuscribirSala) window._fbSuscribirSala(currentSala);
     });
 
@@ -754,6 +758,7 @@ document.querySelectorAll('.sala-btn').forEach(btn => {
             socket.emit('unirse-sala', currentSala);
         }
         chatContainer.innerHTML = '';
+        limpiarDeduplicador();  // Limpiar dedup al cambiar sala
         if (window._fbSuscribirSala) window._fbSuscribirSala(currentSala);
     });
 });
