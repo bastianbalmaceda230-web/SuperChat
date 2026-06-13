@@ -189,16 +189,24 @@ export async function guardarMensaje(sala, usuario, mensaje, tipo = 'texto', ext
 
 // ── Renderizar mensaje de Firestore ───────────────────────────────────────────
 function renderFirestoreMsg(d, docId) {
-  const esMio = d.usuario === miNombreFirebase;
-
   // Anti-duplicados: usar el ID del documento Firestore como clave única
-  // Si no hay docId, fallback al composite key anterior
   const clave = docId
     ? 'doc|' + docId
     : d.usuario + '|' + (d.mensaje || '').slice(0, 40) + '|' + (d.ts ? (d.ts.seconds || d.ts) : '');
   if (window._mensajesRenderizados && window._mensajesRenderizados.has(clave)) return;
   if (window._mensajesRenderizados) window._mensajesRenderizados.add(clave);
 
+  // Mensaje del sistema: se renderiza centrado, sin burbuja ni autor
+  if (d.tipo === 'sistema') {
+    const div = document.createElement('div');
+    div.classList.add('mensaje', 'sistema');
+    div.textContent = d.mensaje;
+    chatContainer.appendChild(div);
+    chatContainer.scrollTop = chatContainer.scrollHeight;
+    return;
+  }
+
+  const esMio = d.usuario === miNombreFirebase;
   const div = document.createElement('div');
   div.classList.add('mensaje', 'fb-msg');
   if (esMio) div.classList.add('propio');
@@ -208,14 +216,6 @@ function renderFirestoreMsg(d, docId) {
     autor.classList.add('autor');
     autor.textContent = d.usuario;
     div.appendChild(autor);
-  }
-
-  if (d.tipo === 'sistema') {
-    div.classList.add('sistema');
-    div.textContent = d.mensaje;
-    chatContainer.appendChild(div);
-    chatContainer.scrollTop = chatContainer.scrollHeight;
-    return;
   }
 
   if (d.tipo === 'imagen') {
