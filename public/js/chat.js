@@ -407,9 +407,20 @@ const waitForName = setInterval(() => {
         showWelcomeAnimation(miNombre);
         if (socket) {
           socket.emit('nuevoUsuario', miNombre, miUid);
-        }
-        if (!socket) {
-          renderSoloMember(miNombre);
+        } else {
+          // Modo GitHub Pages: usar presencia Firestore
+          if (window._fbEntrarPresencia) {
+            window._fbEntrarPresencia('general');
+          }
+          if (window._fbSuscribirPresencia) {
+            window._fbSuscribirPresencia('general', renderMembers);
+          }
+          if (window._fbEnviarMensajeSistema) {
+            // Pequeño delay para asegurar que presencia se registró
+            setTimeout(() => {
+              window._fbEnviarMensajeSistema('general', `${miNombre} se unió al chat`);
+            }, 800);
+          }
         }
         console.log('[Chat] Nombre cargado desde Firebase:', miNombre);
     }
@@ -707,11 +718,24 @@ function crearBotonSala(salaId, nombre, esCreador = false) {
     }
 
     btn.addEventListener('click', () => {
+        const salaAnterior = currentSala;
         document.querySelectorAll('.sala-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         currentSala = salaId;
         if (socket) {
             socket.emit('unirse-sala', currentSala);
+        } else {
+            // Modo GitHub Pages: actualizar presencia y enviar mensaje sistema
+            if (window._fbCambiarPresenciaSala) {
+                window._fbCambiarPresenciaSala(currentSala);
+            }
+            if (window._fbSuscribirPresencia) {
+                window._fbSuscribirPresencia(currentSala, renderMembers);
+            }
+            if (window._fbEnviarMensajeSistema && miNombre) {
+                window._fbEnviarMensajeSistema(salaAnterior, `${miNombre} salió de #${salaAnterior}`);
+                window._fbEnviarMensajeSistema(currentSala, `${miNombre} entró a #${currentSala}`);
+            }
         }
         chatContainer.innerHTML = '';
         limpiarDeduplicador();  // Limpiar dedup al cambiar sala
@@ -751,11 +775,24 @@ function confirmarEliminarSala(salaId, nombre) {
 
 document.querySelectorAll('.sala-btn').forEach(btn => {
     btn.addEventListener('click', () => {
+        const salaAnterior = currentSala;
         document.querySelectorAll('.sala-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         currentSala = btn.dataset.sala;
         if (socket) {
             socket.emit('unirse-sala', currentSala);
+        } else {
+            // Modo GitHub Pages: actualizar presencia y enviar mensaje sistema
+            if (window._fbCambiarPresenciaSala) {
+                window._fbCambiarPresenciaSala(currentSala);
+            }
+            if (window._fbSuscribirPresencia) {
+                window._fbSuscribirPresencia(currentSala, renderMembers);
+            }
+            if (window._fbEnviarMensajeSistema && miNombre && salaAnterior !== currentSala) {
+                window._fbEnviarMensajeSistema(salaAnterior, `${miNombre} salió de #${salaAnterior}`);
+                window._fbEnviarMensajeSistema(currentSala, `${miNombre} entró a #${currentSala}`);
+            }
         }
         chatContainer.innerHTML = '';
         limpiarDeduplicador();  // Limpiar dedup al cambiar sala
@@ -1127,3 +1164,18 @@ function openLightbox(src) {
 }
 lightboxClose.addEventListener('click', () => lightbox.classList.remove('open'));
 lightbox.addEventListener('click', e => { if (e.target === lightbox) lightbox.classList.remove('open'); });
+
+// ─── LIMPIEZA AL CERRAR (GitHub Pages: borrar doc de presencia) ────────────────
+window.addEventListener('beforeunload', () => {
+    if (!socket && window._fbSalirPresencia) {
+        // Usar sendBeacon para asegurar que el doc se borra aunque la página se cierre
+        if (miUid && navigator.sendBeacon) {
+            // sendBeacon no soporta DELETE, así que usamos fetch con keepalive
+            const firebaseConfig = { projectId: 'superchat-47a2d' };
+            const url = `https://firestore.googleapis.com/v1/projects/${firebaseConfig.projectId}/databases/(default)/documents/presencia/${miUid}`;
+            // No podemos hacer DELETE con keepalive fácilmente, así que el doc expirará por timeout (2 min sin heartbeat)
+        }
+        // La función salirPresencia intentará borrar el doc (mejor esfuerzo)
+        window._fbSalirPresencia();
+    }
+});

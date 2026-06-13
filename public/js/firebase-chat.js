@@ -34,6 +34,8 @@ let dmUnsub = null;               // listener de DM activo
 let currentDmUid = null;          // UID del usuario con quien chateamos en DM
 let solicitudesUnsub = null;      // listener de solicitudes de amistad
 let amigosUnsub = null;           // listener de lista de amigos
+let presenciaUnsub = null;        // listener de presencia por sala
+let presenciaDocRef = null;       // referencia al doc de presencia del usuario actual
 
 // ── Detectar si Socket.IO está disponible ─────────────────────────────────────
 const SOCKET_AVAILABLE = (typeof io !== 'undefined') && window.io !== null;
@@ -206,6 +208,14 @@ function renderFirestoreMsg(d, docId) {
     autor.classList.add('autor');
     autor.textContent = d.usuario;
     div.appendChild(autor);
+  }
+
+  if (d.tipo === 'sistema') {
+    div.classList.add('sistema');
+    div.textContent = d.mensaje;
+    chatContainer.appendChild(div);
+    chatContainer.scrollTop = chatContainer.scrollHeight;
+    return;
   }
 
   if (d.tipo === 'imagen') {
@@ -586,6 +596,118 @@ export async function obtenerInfoUsuario(uid) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
+//  PRESENCIA (quién está en cada sala, sin depender de Socket.IO)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// Entrar a presencia: escribe un doc en presencia/{uid} con la sala actual
+export async function entrarPresencia(sala) {
+  if (!firebaseReady || !miUidFirebase) return;
+  try {
+    presenciaDocRef = doc(db, 'presencia', miUidFirebase);
+    await setDoc(presenciaDocRef, {
+      uid: miUidFirebase,
+      username: miNombreFirebase,
+      sala: sala,
+      lastSeen: serverTimestamp()
+    });
+    console.log(`[Presencia] Entró a #${sala}`);
+  } catch (err) {
+    console.error('[Presencia] Error al entrar:', err);
+  }
+}
+
+// Cambiar de sala en presencia
+export async function cambiarPresenciaSala(sala) {
+  if (!firebaseReady || !miUidFirebase) return;
+  try {
+    const ref = doc(db, 'presencia', miUidFirebase);
+    await setDoc(ref, {
+      uid: miUidFirebase,
+      username: miNombreFirebase,
+      sala: sala,
+      lastSeen: serverTimestamp()
+    }, { merge: true });
+  } catch (err) {
+    console.error('[Presencia] Error al cambiar sala:', err);
+  }
+}
+
+// Salir de presencia (al cerrar sesión o desconectar)
+export async function salirPresencia() {
+  if (presenciaUnsub) { presenciaUnsub(); presenciaUnsub = null; }
+  if (!firebaseReady || !miUidFirebase) return;
+  try {
+    const ref = doc(db, 'presencia', miUidFirebase);
+    await deleteDoc(ref);
+    console.log('[Presencia] Salió');
+  } catch (err) {
+    console.error('[Presencia] Error al salir:', err);
+  }
+  presenciaDocRef = null;
+}
+
+// Suscribirse a cambios de presencia en una sala → callback(miembros[])
+export function suscribirPresencia(sala, callback) {
+  if (presenciaUnsub) { presenciaUnsub(); presenciaUnsub = null; }
+
+  const ref = collection(db, 'presencia');
+  // Limpiar docs viejos (>2 min sin heartbeat) y filtrar por sala
+  const hace2min = new Date(Date.now() - 2 * 60 * 1000);
+
+  presenciaUnsub = onSnapshot(ref, snapshot => {
+    const miembros = [];
+    const seen = new Set();
+    snapshot.forEach(docSnap => {
+      const d = docSnap.data();
+      // Ignorar docs viejos (usuarios que cerraron sin limpiar)
+      if (!d.lastSeen) return;
+      const ts = d.lastSeen.toDate ? d.lastSeen.toDate() : new Date(d.lastSeen);
+      if (ts < hace2min) return;
+      // Solo miembros de esta sala
+      if (d.sala !== sala) return;
+      // Deduplicar por uid
+      const key = d.uid || d.username;
+      if (seen.has(key)) return;
+      seen.add(key);
+      miembros.push({ username: d.username, uid: d.uid || '' });
+    });
+    if (callback) callback(miembros);
+  }, err => {
+    console.error('[Presencia] Error al escuchar:', err);
+  });
+
+  // Heartbeat: actualizar lastSeen cada 30s
+  const heartbeat = setInterval(() => {
+    if (!firebaseReady || !miUidFirebase) { clearInterval(heartbeat); return; }
+    const ref = doc(db, 'presencia', miUidFirebase);
+    setDoc(ref, { lastSeen: serverTimestamp() }, { merge: true }).catch(() => {});
+  }, 30000);
+
+  // Guardar el intervalo para limpiarlo en salirPresencia
+  presenciaUnsub._heartbeat = heartbeat;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//  MENSAJES DEL SISTEMA (join/leave) vía Firestore
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// Enviar mensaje del sistema a una sala (se renderiza como burbuja "sistema")
+export async function enviarMensajeSistema(sala, texto) {
+  if (!firebaseReady) return;
+  try {
+    await addDoc(collection(db, 'salas', sala, 'mensajes'), {
+      usuario: '',
+      mensaje: texto,
+      tipo: 'sistema',
+      ts: serverTimestamp(),
+      _socketId: ''
+    });
+  } catch (err) {
+    console.error('[Sistema] Error al enviar mensaje del sistema:', err);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
 //  EXPORTAR A chat.js (bridge)
 // ═══════════════════════════════════════════════════════════════════════════════
 window._fbGuardarMensaje     = guardarMensaje;
@@ -603,4 +725,11 @@ window._fbResponderSolicitud = responderSolicitud;
 window._fbEliminarAmigo      = eliminarAmigo;
 window._fbObtenerInfoUsuario = obtenerInfoUsuario;
 
-console.log('[Firebase] firebase-chat.js v8 cargado (DMs, Amigos, Auto-borrado 24h, dedup por docId)');
+// Presencia y sistema (GitHub Pages / sin Socket.IO)
+window._fbEntrarPresencia       = entrarPresencia;
+window._fbCambiarPresenciaSala  = cambiarPresenciaSala;
+window._fbSalirPresencia        = salirPresencia;
+window._fbSuscribirPresencia    = suscribirPresencia;
+window._fbEnviarMensajeSistema  = enviarMensajeSistema;
+
+console.log('[Firebase] firebase-chat.js v9 cargado (Presencia, Sistema, DMs, Amigos, Auto-borrado 24h)');
