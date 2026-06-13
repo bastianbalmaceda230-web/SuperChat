@@ -323,9 +323,23 @@ if (dmForm) {
 }
 
 // ─── SONIDO ───────────────────────────────────────────────────────────────────
+// AudioContext compartido (evita recrearlo cada vez — necesario en GitHub Pages)
+let _audioCtx = null;
+function getAudioContext() {
+    if (!_audioCtx) {
+        _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    // Resume si está suspendido (política de autoplay del navegador)
+    if (_audioCtx.state === 'suspended') {
+        _audioCtx.resume();
+    }
+    return _audioCtx;
+}
+
 function playSound(tipo = 'mensaje') {
     try {
-        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const ctx = getAudioContext();
+        if (ctx.state === 'suspended') return; // aún no hay gesto del usuario
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
         osc.connect(gain); gain.connect(ctx.destination);
@@ -343,6 +357,16 @@ function playSound(tipo = 'mensaje') {
         osc.start(ctx.currentTime); osc.stop(ctx.currentTime + 0.4);
     } catch (e) { }
 }
+
+// Exponer globalmente para firebase-chat.js (GitHub Pages)
+window._superchatPlaySound = playSound;
+
+// Resumir AudioContext en el primer click/interacción del usuario
+document.addEventListener('click', () => {
+    if (_audioCtx && _audioCtx.state === 'suspended') {
+        _audioCtx.resume();
+    }
+}, { once: true });
 
 // ─── TOAST ────────────────────────────────────────────────────────────────────
 function showToast(titulo, mensaje, tipo = 'mensaje') {

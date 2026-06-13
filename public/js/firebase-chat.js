@@ -145,19 +145,21 @@ export function suscribirSala(sala) {
   if (SOCKET_AVAILABLE) {
     // Con Socket.IO: solo cargar historial una vez (getDocs).
     // Los nuevos mensajes llegan por Socket.IO en tiempo real.
+    // esNuevo=false → no dispara sonidos al cargar historial
     getDocs(q).then(snapshot => {
       snapshot.forEach(docSnap => {
-        renderFirestoreMsg(docSnap.data(), docSnap.id);
+        renderFirestoreMsg(docSnap.data(), docSnap.id, false);
       });
     }).catch(err => {
       console.error('[Firestore] Error al cargar historial:', err);
     });
   } else {
     // Sin Socket.IO: usar onSnapshot para recibir mensajes en tiempo real via Firestore
+    // esNuevo=true → dispara sonidos y toasts en mensajes entrantes
     firestoreUnsub = onSnapshot(q, snapshot => {
       snapshot.docChanges().forEach(change => {
         if (change.type === 'added') {
-          renderFirestoreMsg(change.doc.data(), change.doc.id);
+          renderFirestoreMsg(change.doc.data(), change.doc.id, true);
         }
       });
     }, err => {
@@ -188,7 +190,7 @@ export async function guardarMensaje(sala, usuario, mensaje, tipo = 'texto', ext
 }
 
 // ── Renderizar mensaje de Firestore ───────────────────────────────────────────
-function renderFirestoreMsg(d, docId) {
+function renderFirestoreMsg(d, docId, esNuevo = false) {
   // Anti-duplicados: usar el ID del documento Firestore como clave única
   const clave = docId
     ? 'doc|' + docId
@@ -203,6 +205,10 @@ function renderFirestoreMsg(d, docId) {
     div.textContent = d.mensaje;
     chatContainer.appendChild(div);
     chatContainer.scrollTop = chatContainer.scrollHeight;
+    // Solo sonar si es mensaje nuevo (tiempo real), no del historial
+    if (esNuevo && window._superchatPlaySound) {
+      window._superchatPlaySound('sistema');
+    }
     return;
   }
 
@@ -216,6 +222,11 @@ function renderFirestoreMsg(d, docId) {
     autor.classList.add('autor');
     autor.textContent = d.usuario;
     div.appendChild(autor);
+
+    // Sonido y toast para mensaje nuevo de otro usuario (no propio, no historial)
+    if (esNuevo && window._superchatPlaySound) {
+      window._superchatPlaySound('mensaje');
+    }
   }
 
   if (d.tipo === 'imagen') {
