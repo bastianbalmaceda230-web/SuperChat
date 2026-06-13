@@ -1,12 +1,13 @@
-// ═══════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════
 //  firebase-config.js  —  Superchat Firebase SDK v10
-// ═══════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
   getFirestore,
-  collection, addDoc,
-  query, orderBy, limit,
-  onSnapshot, serverTimestamp
+  collection, addDoc, doc, deleteDoc, setDoc, getDoc,
+  query, orderBy, limit, where, getDocs,
+  onSnapshot, serverTimestamp,
+  writeBatch
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import {
   getAuth,
@@ -31,9 +32,10 @@ const auth = getAuth(app);
 
 export {
   db, auth,
-  collection, addDoc,
-  query, orderBy, limit,
+  collection, addDoc, doc, deleteDoc, setDoc, getDoc,
+  query, orderBy, limit, where, getDocs,
   onSnapshot, serverTimestamp,
+  writeBatch,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   signOut,

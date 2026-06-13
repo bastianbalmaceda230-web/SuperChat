@@ -50,18 +50,34 @@ function switchTab(tab) {
   if (tab === 'login') {
     tabLogin.classList.add('active');
     tabRegister.classList.remove('active');
-    loginForm.style.display = '';
-    registerForm.style.display = 'none';
-    loginError.textContent = '';
-    registerError.textContent = '';
+    // Crossfade: fade out register, then fade in login
+    registerForm.style.opacity = '0';
+    registerForm.style.transform = 'translateY(8px)';
+    setTimeout(() => {
+      registerForm.style.display = 'none';
+      loginForm.style.display = '';
+      requestAnimationFrame(() => {
+        loginForm.style.opacity = '1';
+        loginForm.style.transform = 'translateY(0)';
+      });
+    }, 280);
   } else {
     tabRegister.classList.add('active');
     tabLogin.classList.remove('active');
-    registerForm.style.display = '';
-    loginForm.style.display = 'none';
-    loginError.textContent = '';
-    registerError.textContent = '';
+    // Crossfade: fade out login, then fade in register
+    loginForm.style.opacity = '0';
+    loginForm.style.transform = 'translateY(8px)';
+    setTimeout(() => {
+      loginForm.style.display = 'none';
+      registerForm.style.display = '';
+      requestAnimationFrame(() => {
+        registerForm.style.opacity = '1';
+        registerForm.style.transform = 'translateY(0)';
+      });
+    }, 280);
   }
+  loginError.textContent = '';
+  registerError.textContent = '';
 }
 
 tabLogin.addEventListener('click', () => switchTab('login'));
@@ -211,12 +227,27 @@ registerForm.addEventListener('submit', async (e) => {
   }
 });
 
+// ─── Auth loader helper ───────────────────────────────────────────────────────
+function ocultarAuthLoader() {
+  const loader = document.getElementById('auth-loader');
+  if (loader) {
+    loader.classList.add('auth-loader-hidden');
+    loader.addEventListener('transitionend', () => {
+      loader.remove();
+    }, { once: true });
+  }
+}
+
 // ─── AUTH STATE OBSERVER ──────────────────────────────────────────────────────
 onAuthStateChanged(auth, (user) => {
   if (user) {
-    // Usuario autenticado → redirigir al chat
+    // Usuario autenticado → ocultar loader y redirigir al chat
     console.log('[Login] Usuario autenticado:', user.email);
+    ocultarAuthLoader();
     window.location.href = 'index.html';
+  } else {
+    // No hay sesión → ocultar loader para mostrar el formulario de login
+    ocultarAuthLoader();
   }
 });
 
@@ -228,50 +259,12 @@ regPassword.addEventListener('keydown', (e) => {
   if (e.key === 'Enter') registerForm.dispatchEvent(new Event('submit'));
 });
 
-// ─── MOUSE PARALLAX ──────────────────────────────────────────────────────────
-(function initParallax() {
-  const parallax = document.getElementById('login-bg-parallax');
-  if (!parallax) return;
-
-  // Collect all orb wrappers with their individual intensities
-  const orbs = [];
-  parallax.querySelectorAll('.orb-wrap').forEach((wrap) => {
-    const intensity = parseFloat(wrap.dataset.intensity) || 1;
-    orbs.push({ el: wrap, intensity, x: 0, y: 0 });
-  });
-
-  let targetX = 0, targetY = 0;
-  let currentX = 0, currentY = 0;
-
-  document.addEventListener('mousemove', (e) => {
-    const cx = window.innerWidth / 2;
-    const cy = window.innerHeight / 2;
-    targetX = (e.clientX - cx) / cx;
-    targetY = (e.clientY - cy) / cy;
-  });
-
-  function animate() {
-    // Smooth interpolation (higher lerp = more fluid follow)
-    currentX += (targetX - currentX) * 0.1;
-    currentY += (targetY - currentY) * 0.1;
-
-    // Move the whole parallax container
-    const baseX = currentX * 35;
-    const baseY = currentY * 35;
-    parallax.style.transform = `translate(${baseX}px, ${baseY}px)`;
-
-    // Move each orb individually via CSS custom properties for extra depth
-    for (const orb of orbs) {
-      orb.x += ((currentX * orb.intensity * 50) - orb.x) * 0.12;
-      orb.y += ((currentY * orb.intensity * 50) - orb.y) * 0.12;
-      orb.el.style.setProperty('--px', orb.x.toFixed(1) + 'px');
-      orb.el.style.setProperty('--py', orb.y.toFixed(1) + 'px');
-    }
-
-    requestAnimationFrame(animate);
-  }
-  animate();
-})();
+// ─── ORBE INIT ───────────────────────────────────────────────────────────────
+// Los orbes ahora se animan autónomamente vía CSS @keyframes (orbFloat1-6).
+// El paralaje por mouse fue eliminado porque los transform de las animaciones
+// CSS y los del script entraban en conflicto.
+// Las variables --px/--py se mantienen en 0 (por si se necesitan en el futuro).
+console.log('[Login] Orbes animados por CSS @keyframes');
 
 // ─── CLICK RIPPLE / PARTICLE BURST ──────────────────────────────────────────
 (function initClickEffect() {
