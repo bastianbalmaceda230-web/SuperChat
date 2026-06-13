@@ -323,23 +323,33 @@ if (dmForm) {
 }
 
 // ─── SONIDO ───────────────────────────────────────────────────────────────────
-// AudioContext compartido (evita recrearlo cada vez — necesario en GitHub Pages)
+// ─── SONIDO ───────────────────────────────────────────────────────────────────
+// Política de autoplay del navegador: el AudioContext debe crearse DENTRO de un
+// gesto del usuario (click/tap). Por eso diferimos su creación hasta el primer click.
 let _audioCtx = null;
-function getAudioContext() {
+let _audioAllowed = false;
+
+function ensureAudioContext() {
     if (!_audioCtx) {
-        _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        try {
+            _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        } catch (e) { return false; }
     }
-    // Resume si está suspendido (política de autoplay del navegador)
     if (_audioCtx.state === 'suspended') {
         _audioCtx.resume();
     }
-    return _audioCtx;
+    if (_audioCtx.state === 'running') {
+        _audioAllowed = true;
+        return true;
+    }
+    return false;
 }
 
 function playSound(tipo = 'mensaje') {
+    if (!_audioAllowed || !_audioCtx) return; // aún no hay gesto del usuario
     try {
-        const ctx = getAudioContext();
-        if (ctx.state === 'suspended') return; // aún no hay gesto del usuario
+        const ctx = _audioCtx;
+        if (ctx.state !== 'running') return;
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
         osc.connect(gain); gain.connect(ctx.destination);
@@ -361,12 +371,13 @@ function playSound(tipo = 'mensaje') {
 // Exponer globalmente para firebase-chat.js (GitHub Pages)
 window._superchatPlaySound = playSound;
 
-// Resumir AudioContext en el primer click/interacción del usuario
+// Crear y desbloquear AudioContext en el primer click del usuario (política autoplay)
 document.addEventListener('click', () => {
-    if (_audioCtx && _audioCtx.state === 'suspended') {
-        _audioCtx.resume();
-    }
-}, { once: true });
+    ensureAudioContext();
+}, { capture: true, passive: true });
+document.addEventListener('touchstart', () => {
+    ensureAudioContext();
+}, { capture: true, passive: true });
 
 // ─── TOAST ────────────────────────────────────────────────────────────────────
 function showToast(titulo, mensaje, tipo = 'mensaje') {
